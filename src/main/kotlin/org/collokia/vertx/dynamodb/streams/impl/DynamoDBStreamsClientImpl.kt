@@ -10,6 +10,7 @@ import com.amazonaws.regions.Region
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsAsync
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsAsyncClient
+import com.amazonaws.services.dynamodbv2.model.AttributeValue
 import com.amazonaws.services.dynamodbv2.model.DescribeStreamRequest
 import com.amazonaws.services.dynamodbv2.model.GetRecordsRequest
 import io.vertx.core.AsyncResult
@@ -20,6 +21,7 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
 import org.collokia.vertx.dynamodb.streams.DynamoDBStreamsClient
+import org.collokia.vertx.dynamodb.streams.util.toByteArray
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.Delegates
 
@@ -86,14 +88,35 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                                 .put("eventSource", record.getEventSource())
                                 .put("awsRegion", record.getAwsRegion())
                                 .put("record", record.getDynamodb().let { dynamoDb ->
-                                    // TODO: implement
-                                    dynamoDb.getKeys()
+                                    JsonObject()
+                                        .put("keys", dynamoDb.getKeys())
+                                        .put("newImage", dynamoDb.getNewImage())
+                                        .put("oldImage", dynamoDb.getOldImage())
+                                        .put("sequenceNumber", dynamoDb.getSequenceNumber())
+                                        .put("sizeBytes", dynamoDb.getSizeBytes())
+                                        .put("streamViewType", dynamoDb.getStreamViewType())
                                 })
                         }))
                 }
             )
         }
     }
+
+    private fun Map<String, AttributeValue>.toJson(): JsonObject = JsonObject(
+        this.mapValues { it.value.toJson() }
+    )
+
+    private fun AttributeValue.toJson(): JsonObject = JsonObject()
+        .put("stringData", this.getS())
+        .put("numberData", this.getN())
+        .put("binaryData", this.getB()?.toByteArray())
+        .put("stringListData", JsonArray(this.getSS()))
+        .put("numberListData", JsonArray(this.getNS()))
+        .put("binaryListData", JsonArray(this.getBS().map { it.toByteArray() }))
+        .put("map", JsonObject(this.getM().mapValues { it.value.toJson() }))
+        .put("list", JsonArray(this.getL().map { it.toJson() }))
+        .put("boolean", this.isBOOL())
+        .put("isNull", this.isNULL())
 
     override fun start(resultHandler: Handler<AsyncResult<Void>>) {
         log.info("Starting DynamoDB Streams client");
