@@ -68,6 +68,11 @@ dependencies {
     annotationProcessor 'io.vertx:vertx-codegen:3.0.0'
 
     testCompile 'junit:junit:4.12'
+    testCompile 'net.lingala.zip4j:zip4j:1.3.2'
+}
+
+test {
+	systemProperty "DynamoDB.Local.Path", "$projectDir/lib/dynamodb_local_2015-07-16_1.0.zip"	
 }
 
 task wrapper(type: Wrapper) {
