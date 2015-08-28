@@ -87,9 +87,9 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                                 .put("awsRegion", record.getAwsRegion())
                                 .put("record", record.getDynamodb().let { dynamoDb ->
                                     JsonObject()
-                                        .put("keys", dynamoDb.getKeys())
-                                        .put("newImage", dynamoDb.getNewImage())
-                                        .put("oldImage", dynamoDb.getOldImage())
+                                        .put("keys", dynamoDb.getKeys().toJson())
+                                        .put("newImage", dynamoDb.getNewImage().toJson())
+                                        .put("oldImage", dynamoDb.getOldImage().toJson())
                                         .put("sequenceNumber", dynamoDb.getSequenceNumber())
                                         .put("sizeBytes", dynamoDb.getSizeBytes())
                                         .put("streamViewType", dynamoDb.getStreamViewType())
