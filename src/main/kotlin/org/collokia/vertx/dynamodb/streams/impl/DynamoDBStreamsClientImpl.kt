@@ -10,9 +10,7 @@ import com.amazonaws.regions.Region
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsAsync
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsAsyncClient
-import com.amazonaws.services.dynamodbv2.model.AttributeValue
-import com.amazonaws.services.dynamodbv2.model.DescribeStreamRequest
-import com.amazonaws.services.dynamodbv2.model.GetRecordsRequest
+import com.amazonaws.services.dynamodbv2.model.*
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
@@ -117,6 +115,36 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
         .put("list", JsonArray(this.getL().map { it.toJson() }))
         .put("boolean", this.isBOOL())
         .put("isNull", this.isNULL())
+
+    override fun getShardIterator(streamArn: String, shardId: String, shardIteratorType: String, sequenceNumber: String?, resultHandler: Handler<AsyncResult<String>>) {
+        withClient { client ->
+            client.getShardIteratorAsync(GetShardIteratorRequest()
+                .withStreamArn(streamArn)
+                .withShardId(shardId)
+                .withShardIteratorType(shardIteratorType)
+                .withSequenceNumber(sequenceNumber),
+                resultHandler.withConverter { it.getShardIterator() }
+            )
+        }
+    }
+
+    override fun listStreams(tableName: String, limit: Int?, exclusiveStartStreamArn: String?, resultHandler: Handler<AsyncResult<List<JsonObject>>>) {
+        withClient { client ->
+            client.listStreamsAsync(ListStreamsRequest()
+                .withTableName(tableName)
+                .withLimit(limit)
+                .withExclusiveStartStreamArn(exclusiveStartStreamArn),
+                resultHandler.withConverter {
+                    it.getStreams().map { stream ->
+                        JsonObject()
+                            .put("streamArn", stream.getStreamArn())
+                            .put("tableName", stream.getTableName())
+                            .put("streamLabel", stream.getStreamLabel())
+                    }
+                }
+            )
+        }
+    }
 
     override fun start(resultHandler: Handler<AsyncResult<Void>>) {
         log.info("Starting DynamoDB Streams client");
