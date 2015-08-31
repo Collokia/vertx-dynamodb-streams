@@ -24,7 +24,7 @@ abstract class BaseDynamoDBLocalTest {
 
         val vertx: Vertx = Vertx.vertx()
 
-        var dynamoDbLocalProcess : Process by Delegates.notNull()
+        var dynamoDBLocalProcess: Process by Delegates.notNull()
 
         @BeforeClass
         @platformStatic
@@ -32,31 +32,31 @@ abstract class BaseDynamoDBLocalTest {
             context.assertNotNull(DynamoDBLocalZipPath)
             context.assertTrue(File(DynamoDBLocalZipPath).exists())
 
-            val localDynanoDBPath = File(System.getProperty("user.home"), ".localDynamoDb-vertx-dynamodb-streams")
-            if (!localDynanoDBPath.exists()) {
-                localDynanoDBPath.mkdir()
-                ZipFile(DynamoDBLocalZipPath).extractAll(localDynanoDBPath.getPath())
+            val localDynamoDBPath = File(System.getProperty("user.home"), ".localDynamoDb-vertx-dynamodb-streams")
+            if (!localDynamoDBPath.exists()) {
+                localDynamoDBPath.mkdir()
+                ZipFile(DynamoDBLocalZipPath).extractAll(localDynamoDBPath.getPath())
             }
 
-            val localDynamoDbJar = File(localDynanoDBPath, "DynamoDBLocal.jar")
-            context.assertTrue(localDynamoDbJar.exists())
+            val localDynamoDBJar = File(localDynamoDBPath, "DynamoDBLocal.jar")
+            context.assertTrue(localDynamoDBJar.exists())
 
-            dynamoDbLocalProcess = ProcessBuilder()
-                .command(listOf("java", "-jar", localDynamoDbJar.getPath(), "-inMemory"))
-                .directory(localDynanoDBPath)
+            dynamoDBLocalProcess = ProcessBuilder()
+                .command(listOf("java", "-jar", localDynamoDBJar.getPath(), "-inMemory"))
+                .directory(localDynamoDBPath)
                 .redirectOutput(Redirect.INHERIT)
                 .redirectError(Redirect.INHERIT)
                 .start()
 
             Thread.sleep(2000)
 
-            context.assertTrue(dynamoDbLocalProcess.isAlive())
+            context.assertTrue(dynamoDBLocalProcess.isAlive())
         }
 
         @AfterClass
         @platformStatic
         fun after(context: TestContext) {
-            dynamoDbLocalProcess.destroy()
+            dynamoDBLocalProcess.destroy()
         }
     }
 
