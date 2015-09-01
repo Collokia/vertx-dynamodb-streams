@@ -57,11 +57,10 @@ abstract class AbstractDynamoDBShardConsumerVerticle : DynamoDBStreamVerticle() 
 
         vertxClient.getRecords(shardIterator, null, Handler {
             if (it.succeeded()) {
-                val result = it.result()
+                val records = it.result().getJsonArray("records").map { it as? JsonObject }.filterNotNull()
+                processRecords(records)
 
-                processRecords(result.getJsonArray("records").map { it as? JsonObject }.filterNotNull())
-
-                val nextShardIterator = result.getString("nextShardIterator")
+                val nextShardIterator = it.result().getString("nextShardIterator")
                 if (nextShardIterator != null) {
                     shardIterator = nextShardIterator
                     vertx.putToSharedMemoryAsync(DynamoDBStreamVerticle.ShardIteratorMapName, getShardIteratorKey(getShardId()), nextShardIterator, Handler {

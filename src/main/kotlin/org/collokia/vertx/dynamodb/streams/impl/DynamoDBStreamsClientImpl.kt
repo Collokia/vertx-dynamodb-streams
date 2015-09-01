@@ -26,7 +26,7 @@ import kotlin.properties.Delegates
 class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : DynamoDBStreamsClient {
 
     companion object {
-        private val log = LoggerFactory.getLogger(javaClass)
+        private val log = LoggerFactory.getLogger("vertx-dynamodb-streams")
     }
 
     var client: AmazonDynamoDBStreamsAsync by Delegates.notNull()
@@ -78,18 +78,18 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                 resultHandler.withConverter {
                     JsonObject()
                         .put("nextShardIterator", it.getNextShardIterator())
-                        .put("records", JsonArray(it.getRecords().map { record ->
+                        .put("records", JsonArray(it.getRecords()?.map { record ->
                             JsonObject()
                                 .put("eventID", record.getEventID())
                                 .put("eventName", record.getEventName())
                                 .put("eventVersion", record.getEventVersion())
                                 .put("eventSource", record.getEventSource())
                                 .put("awsRegion", record.getAwsRegion())
-                                .put("record", record.getDynamodb().let { dynamoDb ->
+                                .put("record", record.getDynamodb()?.let { dynamoDb ->
                                     JsonObject()
-                                        .put("keys", dynamoDb.getKeys().toJson())
-                                        .put("newImage", dynamoDb.getNewImage().toJson())
-                                        .put("oldImage", dynamoDb.getOldImage().toJson())
+                                        .put("keys", dynamoDb.getKeys()?.toJson())
+                                        .put("newImage", dynamoDb.getNewImage()?.toJson())
+                                        .put("oldImage", dynamoDb.getOldImage()?.toJson())
                                         .put("sequenceNumber", dynamoDb.getSequenceNumber())
                                         .put("sizeBytes", dynamoDb.getSizeBytes())
                                         .put("streamViewType", dynamoDb.getStreamViewType())
@@ -100,21 +100,27 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
         }
     }
 
-    private fun Map<String, AttributeValue>.toJson(): JsonObject = JsonObject(
-        this.mapValues { it.value.toJson() }
-    )
+    private fun Map<String, AttributeValue>.toJson(): JsonObject =
+        JsonObject(this.mapValues { it.value.toJson() })
 
     private fun AttributeValue.toJson(): JsonObject = JsonObject()
         .put("stringData", this.getS())
         .put("numberData", this.getN())
         .put("binaryData", this.getB()?.toByteArray())
-        .put("stringListData", JsonArray(this.getSS()))
-        .put("numberListData", JsonArray(this.getNS()))
-        .put("binaryListData", JsonArray(this.getBS().map { it.toByteArray() }))
-        .put("map", JsonObject(this.getM().mapValues { it.value.toJson() }))
-        .put("list", JsonArray(this.getL().map { it.toJson() }))
+        .put("stringListData", this.getSS()?.toJsonArray())
+        .put("numberListData", this.getNS()?.toJsonArray())
+        .put("binaryListData", this.getBS()?.map { it.toByteArray() }?.let { JsonArray(it) })
+        .put("map", this.getM()?.mapValues { it.value.toJson() }?.let { JsonObject(it) })
+        .put("list", this.getL()?.map { it.toJson() }?.let { JsonArray(it) })
         .put("boolean", this.isBOOL())
         .put("isNull", this.isNULL())
+
+    private fun List<String>.toJsonArray(): JsonArray? {
+        if (isEmpty()) {
+            return null
+        }
+        return JsonArray(this)
+    }
 
     override fun getShardIterator(streamArn: String, shardId: String, shardIteratorType: String, sequenceNumber: String?, resultHandler: Handler<AsyncResult<String>>) {
         withClient { client ->
@@ -201,16 +207,21 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
     ): DynamoDBToVertxHandlerAdapter<DynamoDBRequest, DynamoDBResult, VertxResult> =
         DynamoDBToVertxHandlerAdapter(
             vertxHandler                = this,
-            DynamoDBResultToVertxMapper  = converter
+            dynamoDBResultToVertxMapper = converter
         )
 
     class DynamoDBToVertxHandlerAdapter<DynamoDBRequest : AmazonWebServiceRequest, DynamoDBResult, VertxResult>(
         val vertxHandler: Handler<AsyncResult<VertxResult>>,
-        val DynamoDBResultToVertxMapper: (DynamoDBResult) -> VertxResult
+        val dynamoDBResultToVertxMapper: (DynamoDBResult) -> VertxResult
     ) : AsyncHandler<DynamoDBRequest, DynamoDBResult> {
 
         override fun onSuccess(request: DynamoDBRequest, result: DynamoDBResult) {
-            vertxHandler.handle(Future.succeededFuture(DynamoDBResultToVertxMapper(result)))
+            try {
+                val vertxResult = dynamoDBResultToVertxMapper(result)
+                vertxHandler.handle(Future.succeededFuture(vertxResult))
+            } catch (t: Throwable) {
+                vertxHandler.handle(Future.failedFuture(t))
+            }
         }
 
         override fun onError(exception: Exception) {
