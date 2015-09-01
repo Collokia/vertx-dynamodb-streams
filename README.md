@@ -25,7 +25,7 @@ client.start(result -> {
 });
 ```
 
-Once the client is initialized, it can be used to access the Amazon Kinesis API in async manner:
+Once the client is initialized, it can be used to access the Amazon DynamoDB Streams API in async manner:
 
 ```
 client.listStreams("MyTable", null, null, ar -> {
