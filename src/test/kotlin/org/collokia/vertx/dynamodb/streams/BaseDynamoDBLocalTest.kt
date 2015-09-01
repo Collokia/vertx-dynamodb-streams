@@ -69,19 +69,27 @@ abstract class BaseDynamoDBLocalTest {
     }
 
     fun <DynamoDBRequest : AmazonWebServiceRequest, DynamoDBResult> TestContext.onSuccess(success: (DynamoDBResult) -> Unit): AsyncHandler<DynamoDBRequest, DynamoDBResult> {
-        return this.asyncAssertSuccess<DynamoDBResult>().onSuccess { success(it) }
+        return this.asyncAssertSuccess<DynamoDBResult>().onSuccess(this) { success(it) }
     }
 
-    fun <DynamoDBRequest : AmazonWebServiceRequest, DynamoDBResult> Handler<AsyncResult<DynamoDBResult>>.onSuccess(success: (DynamoDBResult) -> Unit): AsyncHandler<DynamoDBRequest, DynamoDBResult> {
+    fun <DynamoDBRequest : AmazonWebServiceRequest, DynamoDBResult> Handler<AsyncResult<DynamoDBResult>>.onSuccess(context: TestContext, success: (DynamoDBResult) -> Unit): AsyncHandler<DynamoDBRequest, DynamoDBResult> {
         val vertxAsyncResultHandler = this
+        val async = context.async()
 
         return object: AsyncHandler<DynamoDBRequest, DynamoDBResult> {
             override fun onSuccess(request: DynamoDBRequest, result: DynamoDBResult) {
                 vertxAsyncResultHandler.handle(Future.succeededFuture(result))
+
+                try {
+                    success(result)
+                } finally {
+                    async.complete()
+                }
             }
 
             override fun onError(exception: Exception) {
                 vertxAsyncResultHandler.handle(Future.failedFuture(exception))
+                async.complete()
             }
         }
     }
