@@ -35,7 +35,7 @@ abstract class AbstractDynamoDBShardConsumerVerticle : DynamoDBStreamVerticle() 
             scheduleGetRecords()
             startFuture.complete()
         } else {
-            log.info("Starting shard consumer without initial iterator") // TODO: ????????
+            log.info("Starting shard consumer without initial iterator")
             vertxClient.getShardIterator(getStreamArn(), getShardId(), "TRIM_HORIZON", null, Handler {
                 if (it.succeeded()) {
                     shardIterator = it.result()

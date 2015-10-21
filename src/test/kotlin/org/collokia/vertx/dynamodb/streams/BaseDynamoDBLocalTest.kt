@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import java.io.File
 import java.lang.ProcessBuilder.Redirect
-import kotlin.platform.platformStatic
 import kotlin.properties.Delegates
 
 // -DDynamoDB.Local.Path=$MODULE_DIR$/lib/dynamodb_local_2015-07-16_1.0.zip
@@ -35,7 +34,7 @@ abstract class BaseDynamoDBLocalTest {
         var dynamoDBLocalProcess: Process by Delegates.notNull()
 
         @BeforeClass
-        @platformStatic
+        @JvmStatic
         fun before(context: TestContext) {
             context.assertNotNull(DynamoDBLocalZipPath)
             context.assertTrue(File(DynamoDBLocalZipPath).exists())
@@ -43,14 +42,14 @@ abstract class BaseDynamoDBLocalTest {
             val localDynamoDBPath = File(System.getProperty("user.home"), ".localDynamoDb-vertx-dynamodb-streams")
             if (!localDynamoDBPath.exists()) {
                 localDynamoDBPath.mkdir()
-                ZipFile(DynamoDBLocalZipPath).extractAll(localDynamoDBPath.getPath())
+                ZipFile(DynamoDBLocalZipPath).extractAll(localDynamoDBPath.path)
             }
 
             val localDynamoDBJar = File(localDynamoDBPath, "DynamoDBLocal.jar")
             context.assertTrue(localDynamoDBJar.exists())
 
             dynamoDBLocalProcess = ProcessBuilder()
-                .command(listOf("java", "-jar", localDynamoDBJar.getPath(), "-inMemory", "-port", Port.toString()))
+                .command(listOf("java", "-jar", localDynamoDBJar.path, "-inMemory", "-port", Port.toString()))
                 .directory(localDynamoDBPath)
                 .redirectOutput(Redirect.INHERIT)
                 .redirectError(Redirect.INHERIT)
@@ -58,11 +57,11 @@ abstract class BaseDynamoDBLocalTest {
 
             Thread.sleep(2000)
 
-            context.assertTrue(dynamoDBLocalProcess.isAlive())
+            context.assertTrue(dynamoDBLocalProcess.isAlive)
         }
 
         @AfterClass
-        @platformStatic
+        @JvmStatic
         fun after(context: TestContext) {
             dynamoDBLocalProcess.destroy()
         }
@@ -95,7 +94,7 @@ abstract class BaseDynamoDBLocalTest {
     }
 
     protected fun getDBClient(): AmazonDynamoDBAsync {
-        val credentials: AWSCredentials = ProfileCredentialsProvider().getCredentials()
+        val credentials: AWSCredentials = ProfileCredentialsProvider().credentials
         val client = AmazonDynamoDBAsyncClient(credentials)
         client.setEndpoint("http://localhost:$Port")
         return client

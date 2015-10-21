@@ -40,28 +40,28 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                 .withLimit(limit)
                 .withExclusiveStartShardId(exclusiveStartShardId),
                 resultHandler.withConverter {
-                    it.getStreamDescription().let { stream ->
+                    it.streamDescription.let { stream ->
                         JsonObject()
-                            .put("streamArn", stream.getStreamArn())
-                            .put("streamLabel", stream.getStreamLabel())
-                            .put("streamStatus", stream.getStreamStatus())
-                            .put("streamViewType", stream.getStreamViewType())
-                            .put("creationRequestDateTime", stream.getCreationRequestDateTime().getTime())
-                            .put("lastEvaluatedShardId", stream.getLastEvaluatedShardId())
-                            .put("tableName", stream.getTableName())
-                            .put("keySchema", JsonArray(stream.getKeySchema().map { keySchemaElement ->
+                            .put("streamArn", stream.streamArn)
+                            .put("streamLabel", stream.streamLabel)
+                            .put("streamStatus", stream.streamStatus)
+                            .put("streamViewType", stream.streamViewType)
+                            .put("creationRequestDateTime", stream.creationRequestDateTime.time)
+                            .put("lastEvaluatedShardId", stream.lastEvaluatedShardId)
+                            .put("tableName", stream.tableName)
+                            .put("keySchema", JsonArray(stream.keySchema.map { keySchemaElement ->
                                 JsonObject()
-                                    .put("attributeName", keySchemaElement.getAttributeName())
-                                    .put("keyType", keySchemaElement.getKeyType())
+                                    .put("attributeName", keySchemaElement.attributeName)
+                                    .put("keyType", keySchemaElement.keyType)
                             }))
-                            .put("shards", JsonArray(stream.getShards().map { shard ->
+                            .put("shards", JsonArray(stream.shards.map { shard ->
                                 JsonObject()
-                                    .put("shardId", shard.getShardId())
-                                    .put("parentShardId", shard.getParentShardId())
-                                    .put("sequenceNumberRange", shard.getSequenceNumberRange().let { range ->
+                                    .put("shardId", shard.shardId)
+                                    .put("parentShardId", shard.parentShardId)
+                                    .put("sequenceNumberRange", shard.sequenceNumberRange.let { range ->
                                         JsonObject()
-                                            .put("startingSequenceNumber", range.getStartingSequenceNumber())
-                                            .put("endingSequenceNumber", range.getEndingSequenceNumber())
+                                            .put("startingSequenceNumber", range.startingSequenceNumber)
+                                            .put("endingSequenceNumber", range.endingSequenceNumber)
                                     })
                             }))
                     }
@@ -77,22 +77,22 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                 .withLimit(limit),
                 resultHandler.withConverter {
                     JsonObject()
-                        .put("nextShardIterator", it.getNextShardIterator())
-                        .put("records", JsonArray(it.getRecords()?.map { record ->
+                        .put("nextShardIterator", it.nextShardIterator)
+                        .put("records", JsonArray(it.records?.map { record ->
                             JsonObject()
-                                .put("eventID", record.getEventID())
-                                .put("eventName", record.getEventName())
-                                .put("eventVersion", record.getEventVersion())
-                                .put("eventSource", record.getEventSource())
-                                .put("awsRegion", record.getAwsRegion())
-                                .put("record", record.getDynamodb()?.let { dynamoDb ->
+                                .put("eventID", record.eventID)
+                                .put("eventName", record.eventName)
+                                .put("eventVersion", record.eventVersion)
+                                .put("eventSource", record.eventSource)
+                                .put("awsRegion", record.awsRegion)
+                                .put("record", record.dynamodb?.let { dynamoDb ->
                                     JsonObject()
-                                        .put("keys", dynamoDb.getKeys()?.toJson())
-                                        .put("newImage", dynamoDb.getNewImage()?.toJson())
-                                        .put("oldImage", dynamoDb.getOldImage()?.toJson())
-                                        .put("sequenceNumber", dynamoDb.getSequenceNumber())
-                                        .put("sizeBytes", dynamoDb.getSizeBytes())
-                                        .put("streamViewType", dynamoDb.getStreamViewType())
+                                        .put("keys", dynamoDb.keys?.toJson())
+                                        .put("newImage", dynamoDb.newImage?.toJson())
+                                        .put("oldImage", dynamoDb.oldImage?.toJson())
+                                        .put("sequenceNumber", dynamoDb.sequenceNumber)
+                                        .put("sizeBytes", dynamoDb.sizeBytes)
+                                        .put("streamViewType", dynamoDb.streamViewType)
                                 })
                         }))
                 }
@@ -104,16 +104,16 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
         JsonObject(this.mapValues { it.value.toJson() })
 
     private fun AttributeValue.toJson(): JsonObject = JsonObject()
-        .put("stringData", this.getS())
-        .put("numberData", this.getN())
-        .put("binaryData", this.getB()?.toByteArray())
-        .put("stringListData", this.getSS()?.toJsonArray())
-        .put("numberListData", this.getNS()?.toJsonArray())
-        .put("binaryListData", this.getBS()?.map { it.toByteArray() }?.let { JsonArray(it) })
-        .put("map", this.getM()?.mapValues { it.value.toJson() }?.let { JsonObject(it) })
-        .put("list", this.getL()?.map { it.toJson() }?.let { JsonArray(it) })
-        .put("boolean", this.isBOOL())
-        .put("isNull", this.isNULL())
+        .put("stringData", this.s)
+        .put("numberData", this.n)
+        .put("binaryData", this.b?.toByteArray())
+        .put("stringListData", this.ss?.toJsonArray())
+        .put("numberListData", this.ns?.toJsonArray())
+        .put("binaryListData", this.bs?.map { it.toByteArray() }?.let { JsonArray(it) })
+        .put("map", this.m?.mapValues { it.value.toJson() }?.let { JsonObject(it) })
+        .put("list", this.l?.map { it.toJson() }?.let { JsonArray(it) })
+        .put("boolean", this.isBOOL)
+        .put("isNull", this.isNULL)
 
     private fun List<String>.toJsonArray(): JsonArray? {
         if (isEmpty()) {
@@ -129,7 +129,7 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                 .withShardId(shardId)
                 .withShardIteratorType(shardIteratorType)
                 .withSequenceNumber(sequenceNumber),
-                resultHandler.withConverter { it.getShardIterator() }
+                resultHandler.withConverter { it.shardIterator }
             )
         }
     }
@@ -141,11 +141,11 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                 .withLimit(limit)
                 .withExclusiveStartStreamArn(exclusiveStartStreamArn),
                 resultHandler.withConverter {
-                    it.getStreams().map { stream ->
+                    it.streams.map { stream ->
                         JsonObject()
-                            .put("streamArn", stream.getStreamArn())
-                            .put("tableName", stream.getTableName())
-                            .put("streamLabel", stream.getStreamLabel())
+                            .put("streamArn", stream.streamArn)
+                            .put("tableName", stream.tableName)
+                            .put("streamLabel", stream.streamLabel)
                     }
                 }
             )
@@ -161,7 +161,7 @@ class DynamoDBStreamsClientImpl(val vertx: Vertx, val config: JsonObject) : Dyna
                     BasicAWSCredentials(config.getString("accessKey"), config.getString("secretKey"))
                 } else {
                     try {
-                        ProfileCredentialsProvider().getCredentials()
+                        ProfileCredentialsProvider().credentials
                     } catch (t: Throwable) {
                         throw AmazonClientException(
                             "Cannot load the credentials from the credential profiles file. " +
